@@ -75,6 +75,7 @@ public final class Api: ApiService {
     private static var errorInterceptors: [ErrorInterceptor] = []
     
     public static let shared: Api = .init()
+    public static let verboose: Bool = false
 
     /// Configura la URL base para construir las rutas de los endpoints.
     /// - Parameter url: Cadena con la URL base (por ejemplo, "https://api.ejemplo.com").
@@ -126,6 +127,9 @@ public final class Api: ApiService {
             do {
                 try endpoint.encoder.encode(body, into: &request)
             } catch {
+                if Self.verboose {
+                    print("-> Error decoding: \(error.localizedDescription)")
+                }
                 throw ApiError.encodingError
             }
         }
@@ -137,15 +141,27 @@ public final class Api: ApiService {
             }
         } catch {
             // Give error interceptors a chance to handle/transform
+            if Self.verboose {
+                print("-> InterceptorError: \(error.localizedDescription)")
+            }
             try await handleError(error, request: request, response: nil, endpoint: endpoint)
         }
 
-        debugPrint("-> Request: \(request)")
+        if Self.verboose {
+            print("-> Request: \(request)")
+            print("-> Headers:")
+            for (key, value) in request.allHTTPHeaderFields ?? [:] {
+                print("----> \(key): \(value)")
+            }
+            print("End Headers <-")
+        }
 
         do {
             let (rawData, rawResponse) = try await URLSession.shared.data(for: request)
-            debugPrint("-> Response: \(rawResponse)")
-            debugPrint("-> Data: \(rawData.toString() ?? "No DATA")")
+            if Self.verboose {
+                print("-> Response: \(rawResponse)")
+                print("-> Data: \(rawData.toString() ?? "No DATA")")
+            }
 
             // Apply response interceptors in order
             var data = rawData
@@ -159,6 +175,9 @@ public final class Api: ApiService {
                 let decoder = JSONDecoder()
                 return try decoder.decode(responseType, from: data)
             } else {
+                if Self.verboose {
+                    print("-> StatusCode: \(statusCode)")
+                }
                 let error = ApiError.serverError(error: ErrorType(code: statusCode, message: data.toString() ?? ""))
                 // Let error interceptors process the error (may throw or return)
                 try await handleError(error, request: request, response: response, endpoint: endpoint)
@@ -166,6 +185,9 @@ public final class Api: ApiService {
             }
         } catch {
             // Network or decoding error
+            if Self.verboose {
+                print("Error: \(error.localizedDescription)")
+            }
             try await handleError(error, request: request, response: nil, endpoint: endpoint)
             return nil
         }
@@ -175,6 +197,9 @@ public final class Api: ApiService {
     /// Si alguno no lanza, se considera que el error fue manejado.
     private func handleError(_ error: Error, request: URLRequest?, response: URLResponse?, endpoint: Endpoint) async throws {
         var lastError: Error = error
+        if Self.verboose {
+            print("handleError: \(error)")
+        }
         for interceptor in Self.errorInterceptors {
             do {
                 try await interceptor.intercept(lastError, request: request, response: response, for: endpoint)

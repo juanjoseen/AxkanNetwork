@@ -31,7 +31,7 @@ public enum ApiError: Error, Equatable {
     case serverError(error: ErrorType)
     
     /// Mensaje de error legible para el usuario final.
-    var localizedDescription: String {
+    public var localizedDescription: String {
         switch self {
         case .noServer:
             return "Estamos teniendo problemas para conectarnos a los servidores.\n\nPor favor, revisa tu conexión a internet e inténtalo de nuevo más tarde."
@@ -53,7 +53,7 @@ public enum ApiError: Error, Equatable {
     }
     
     /// Mensaje corto para mostrar en UI compacta (toasts, banners, etc.).
-    var shorMessage: String {
+    public var shorMessage: String {
         switch self {
         case .noServer:
             return "No hay conexión"
@@ -73,14 +73,14 @@ public enum ApiError: Error, Equatable {
 /// Útil para mapear errores de dominio específicos.
 public struct ErrorType: Codable, Equatable, Sendable {
     /// Código numérico del error.
-    var code: Int
+    public var code: Int
     /// Descripción del error devuelta por el servidor.
-    var message: String
+    public var message: String
     
     /// Error estándar para credenciales inválidas.
-    static let INVALID_CREDENTIALS: ErrorType = .init(code: 4501, message: "Credenciales inválidas")
+    public static let INVALID_CREDENTIALS: ErrorType = .init(code: 4501, message: "Credenciales inválidas")
     /// Error genérico/desconocido cuando no se puede determinar la causa exacta.
-    static let unknown: ErrorType = .init(code: 0, message: "Error Desconocido")
+    public static let unknown: ErrorType = .init(code: 0, message: "Error Desconocido")
     
     /// Compara dos errores por su código.
     public static func == (lhs: ErrorType, rhs: ErrorType) -> Bool {
