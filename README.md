@@ -27,3 +27,73 @@ Puedes agregar AxkanNetwork a tu proyecto de dos formas:
         ]
     )
 ]
+```
+
+## Uso
+
+### Configuración inicial
+Para configurarlo usando SwiftUI dentro de tu estructura que conforma el protocolo `App`,  
+
+- Importa AxkanNetwork
+
+```swift
+import AxkanNetwork
+```
+
+- Configura el basePath de tus servicios junto con los interceptors
+
+```swift
+@main
+struct ExampleApp: App {
+    // register your basePath
+    init() {
+        Api.setBaseUrl("https://example.com")
+        Api.setRequestInterceptors( ... )
+        Api.setResponseInterceptors( ... )
+        Api.setErrorInterceptors( ... )        
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### Configura tu endpoint
+
+```swift
+import AxkanNetwork
+
+...
+
+struct LoginEndpoint: Endpoint {
+    var method: HTTPMethod { .post }
+    var path: String = "/auth/login"
+    ...
+} 
+
+```
+
+### Envia tu request
+
+```swift
+
+struct LoginBody: BodyParameters {
+    let username: String
+    let password: String
+} 
+
+...
+
+func login(username: String, password: String) -> throws async {
+    let body: LoginBody(username: username, password: password)
+    let endpoint = LoginEndpoint()
+    
+    if let token: TokenResponse = try await Api.shared.fetch(endpoint: endpoint, body: body, responseType: TokenResponse.self) {
+        // Some validations here
+    }
+}
+
+```
