@@ -24,4 +24,3 @@ public extension Encodable {
         return try encoder.encode(self)
     }
 }
-º
