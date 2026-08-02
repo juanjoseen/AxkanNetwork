@@ -73,6 +73,8 @@ public final class Api: ApiService {
     private static var requestInterceptors: [RequestInterceptor] = []
     private static var responseInterceptors: [ResponseInterceptor] = []
     private static var errorInterceptors: [ErrorInterceptor] = []
+    
+    public static let shared: Api = .init()
 
     /// Configura la URL base para construir las rutas de los endpoints.
     /// - Parameter url: Cadena con la URL base (por ejemplo, "https://api.ejemplo.com").

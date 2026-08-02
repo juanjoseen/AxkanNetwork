@@ -97,11 +97,11 @@ public extension BodyParameters {
 /// - success: indica si la operación fue exitosa.
 /// - error: información de error estructurada (si aplica).
 /// - data: carga útil con el tipo solicitado.
-public struct AxkanResponse<T: Codable>: Codable {
+public struct AxkanResponse<T: Codable & Sendable>: Codable, Sendable {
     /// Indica si la operación fue exitosa.
-    var success: Bool
+    public var success: Bool
     /// Error asociado en caso de fallo.
-    var error: ErrorType?
+    public var error: ErrorType?
     /// Carga útil devuelta por el servicio.
-    var data: T?
+    public var data: T?
 }
