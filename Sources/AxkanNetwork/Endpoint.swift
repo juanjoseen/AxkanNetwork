@@ -80,6 +80,19 @@ public protocol EndpointParameters {
     func toQueryItems() -> [URLQueryItem]
 }
 
+public extension EndpointParameters {
+    func toQueryItems() -> [URLQueryItem] {
+        Mirror(reflecting: self).children.compactMap { child in
+            guard let name = child.label else { return nil }
+            let valueMirror = Mirror(reflecting: child.value)
+            if valueMirror.displayStyle == .optional, valueMirror.children.first == nil {
+                return nil
+            }
+            return URLQueryItem(name: name, value: String(describing: child.value))
+        }
+    }
+}
+
 public protocol BodyParameters: Codable, Sendable {
     /// Convierte el cuerpo a `Data` listo para enviar. Retorna `nil` si no es posible serializar.
     func toData() -> Data?
