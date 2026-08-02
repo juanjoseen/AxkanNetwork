@@ -133,10 +133,16 @@ public final class Api: ApiService {
                 throw ApiError.encodingError
             }
         }
-
+        
+        // Apply endpoint headers
+        endpoint.headers?.forEach { request.addValue($1, forHTTPHeaderField: $0) }
+        
         // Apply request interceptors in order
         do {
-            for interceptor in Self.requestInterceptors {
+            var allInterceptors: [RequestInterceptor] = Self.requestInterceptors
+            allInterceptors.append(contentsOf: endpoint.requestInterceptors ?? [])
+            
+            for interceptor in allInterceptors {
                 request = try await interceptor.intercept(request, for: endpoint)
             }
         } catch {
@@ -166,7 +172,9 @@ public final class Api: ApiService {
             // Apply response interceptors in order
             var data = rawData
             var response = rawResponse
-            for interceptor in Self.responseInterceptors {
+            var allInterceptors: [ResponseInterceptor] = Self.responseInterceptors
+            allInterceptors.append(contentsOf: endpoint.responseInterceptors ?? [])
+            for interceptor in allInterceptors {
                 (data, response) = try await interceptor.intercept(data, response, for: endpoint)
             }
 
@@ -200,7 +208,9 @@ public final class Api: ApiService {
         if Self.verboose {
             print("handleError: \(error)")
         }
-        for interceptor in Self.errorInterceptors {
+        var allInteceptors: [ErrorInterceptor] = Self.errorInterceptors
+        allInteceptors.append(contentsOf: endpoint.errorIterceptors ?? [])
+        for interceptor in allInteceptors {
             do {
                 try await interceptor.intercept(lastError, request: request, response: response, for: endpoint)
                 // If interceptor completes without throwing, treat as recovered

@@ -44,6 +44,12 @@ public protocol Endpoint: Sendable {
     var cachePolicy: URLRequest.CachePolicy { get }
     /// Codificador a utilizar para serializar el cuerpo (por ejemplo, JSON).
     var encoder: ParamEncoder { get }
+    /// lista de interceptores de solicitud.
+    var requestInterceptors: [RequestInterceptor]? { get }
+    /// lista de interceptores de respuesta.
+    var responseInterceptors: [ResponseInterceptor]? { get }
+    /// lista de interceptores de error.
+    var errorIterceptors: [ErrorInterceptor]? { get }
 }
 
 /// Representa un diccionario de cabeceras HTTP.
@@ -72,6 +78,12 @@ public extension Endpoint {
     var cachePolicy: URLRequest.CachePolicy { .useProtocolCachePolicy }
     /// Valor por defecto: `JSONParamEncoder` para serializar cuerpos en JSON.
     var encoder: ParamEncoder { JSONParamEncoder() }
+    /// Valor por defecto: sin interceptors adicionales.
+    var requestInterceptors: [RequestInterceptor]? { nil }
+    /// Valor por defecto: sin interceptors adicionales.
+    var responseInterceptors: [ResponseInterceptor]? { nil }
+    /// Valor por defecto: sin interceptors adicionales.
+    var errorIterceptors: [ErrorInterceptor]? { nil }
 }
 
 /// Define un contrato para convertir parámetros en query items.
