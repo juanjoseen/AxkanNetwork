@@ -29,6 +29,10 @@ public enum ApiError: Error, Equatable {
     case text(message: String)
     /// Error devuelto por el servidor con código y mensaje estructurados.
     case serverError(error: ErrorType)
+    /// No hay contexto disponible para reintentar un request anterior.
+    case noRetryContextAvailable
+    /// El tipo de respuesta esperado no coincide con el tipo del contexto de retry.
+    case typeMismatch
     
     /// Mensaje de error legible para el usuario final.
     public var localizedDescription: String {
@@ -49,6 +53,10 @@ public enum ApiError: Error, Equatable {
             return "Lo sentimos, no pudimos encontrar ningún resultado.\n\nPrueba con una búsqueda diferente o inténtalo de nuevo más tarde."
         case .serverError(let error):
             return error.message
+        case .noRetryContextAvailable:
+            return "No hay ningún request previo para reintentar."
+        case .typeMismatch:
+            return "El tipo de respuesta esperado no coincide con el request anterior."
         }
     }
     
@@ -63,6 +71,10 @@ public enum ApiError: Error, Equatable {
             return "No hay datos"
         case .decodingError:
             return "Error de decodificación"
+        case .noRetryContextAvailable:
+            return "No hay retry disponible"
+        case .typeMismatch:
+            return "Error de tipo"
         default:
             return "Error desconocido"
         }

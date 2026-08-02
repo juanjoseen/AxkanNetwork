@@ -18,6 +18,23 @@ import Foundation
 /// let usuario: Usuario? = try await api.fetch(endpoint: UsersEndpoint.detail(id: 1), body: nil, responseType: Usuario.self)
 /// ```
 ///
+/// Retry de requests:
+/// - Cuando un `ErrorInterceptor` maneja un error sin lanzarlo (por ejemplo, después de refrescar un token),
+///   puedes reintentar el último request manualmente:
+/// ```swift
+/// let resultado: Usuario? = try await api.retryLastRequest()
+/// ```
+///
+/// - O usar el método de conveniencia que reintenta automáticamente:
+/// ```swift
+/// let usuario: Usuario? = try await api.fetchWithAutoRetry(
+///     endpoint: UsersEndpoint.detail(id: 1),
+///     body: nil,
+///     responseType: Usuario.self,
+///     maxRetries: 2
+/// )
+/// ```
+///
 /// Interceptores:
 /// - Configure interceptores estáticos para toda la app:
 /// ```swift
@@ -76,6 +93,14 @@ public final class Api: ApiService {
     
     public static let shared: Api = .init()
     public static var verboose: Bool = false
+    
+    // Retry tracking
+    private struct RetryContext {
+        let endpoint: any Endpoint
+        let body: (any BodyParameters)?
+        let responseType: Any.Type
+    }
+    private var lastRetryContext: RetryContext?
 
     /// Configura la URL base para construir las rutas de los endpoints.
     /// - Parameter url: Cadena con la URL base (por ejemplo, "https://api.ejemplo.com").
@@ -116,6 +141,29 @@ public final class Api: ApiService {
     /// Ejecuta la llamada de red aplicando interceptores de request/response/error.
     /// - Note: Si un `ErrorInterceptor` maneja el error sin lanzar, el método devuelve `nil`.
     public func fetch<T: Codable & Sendable>(endpoint: any Endpoint, body: (any BodyParameters)?, responseType: T.Type) async throws -> T? {
+        // Save context for potential retry
+        lastRetryContext = RetryContext(endpoint: endpoint, body: body, responseType: responseType)
+        
+        return try await performFetch(endpoint: endpoint, body: body, responseType: responseType)
+    }
+    
+    /// Reintenta el último request ejecutado.
+    /// - Returns: La respuesta decodificada o `nil` si no hay contexto previo o un interceptor maneja el error.
+    /// - Throws: `ApiError` si no hay request previo para reintentar o errores de la ejecución.
+    public func retryLastRequest<T: Codable & Sendable>() async throws -> T? {
+        guard let context = lastRetryContext else {
+            throw ApiError.noRetryContextAvailable
+        }
+        
+        guard let responseType = context.responseType as? T.Type else {
+            throw ApiError.typeMismatch
+        }
+        
+        return try await performFetch(endpoint: context.endpoint, body: context.body, responseType: responseType)
+    }
+    
+    /// Ejecuta la llamada de red real aplicando interceptores de request/response/error.
+    private func performFetch<T: Codable & Sendable>(endpoint: any Endpoint, body: (any BodyParameters)?, responseType: T.Type) async throws -> T? {
         guard let url: URL = endpoint.url(base: Self.baseUrl) else {
             throw ApiError.badURL
         }
@@ -220,5 +268,40 @@ public final class Api: ApiService {
             }
         }
         throw lastError
+    }
+    
+    /// Ejecuta un request con retry automático si un ErrorInterceptor maneja el error.
+    /// Este método intenta el request original, y si devuelve nil (indicando que un
+    /// interceptor manejó el error), automáticamente reintenta el número especificado de veces.
+    ///
+    /// - Parameters:
+    ///   - endpoint: El endpoint a llamar
+    ///   - body: Parámetros del cuerpo (opcional)
+    ///   - responseType: El tipo esperado de respuesta
+    ///   - maxRetries: Número máximo de reintentos (por defecto 1)
+    /// - Returns: La respuesta decodificada o nil si todos los intentos fallaron
+    public func fetchWithAutoRetry<T: Codable & Sendable>(
+        endpoint: any Endpoint,
+        body: (any BodyParameters)? = nil,
+        responseType: T.Type,
+        maxRetries: Int = 1
+    ) async throws -> T? {
+        // Primer intento
+        if let result = try await fetch(endpoint: endpoint, body: body, responseType: responseType) {
+            return result
+        }
+        
+        // Si el resultado fue nil, significa que un interceptor manejó el error
+        // Reintentar el número de veces especificado
+        for attempt in 1...maxRetries {
+            if Self.verboose {
+                print("-> Retry attempt \(attempt) of \(maxRetries)")
+            }
+            
+            if let result: T = try await retryLastRequest() {
+                return result
+            }
+        }
+        return nil
     }
 }
