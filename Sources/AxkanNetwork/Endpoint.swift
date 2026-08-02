@@ -29,7 +29,7 @@ import Foundation
 ///     var parameters: EndpointParameters? { nil }
 /// }
 /// ```
-public protocol Endpoint {
+public protocol Endpoint: Sendable {
     /// Método HTTP (GET, POST, PUT, DELETE, etc.).
     var method: HTTPMethod { get }
     /// Ruta relativa del recurso (por ejemplo, "/users").
@@ -80,7 +80,7 @@ public protocol EndpointParameters {
     func toQueryItems() -> [URLQueryItem]
 }
 
-public protocol BodyParameters: Codable {
+public protocol BodyParameters: Codable, Sendable {
     /// Convierte el cuerpo a `Data` listo para enviar. Retorna `nil` si no es posible serializar.
     func toData() -> Data?
 }

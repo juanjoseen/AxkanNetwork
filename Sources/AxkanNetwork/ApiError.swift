@@ -71,7 +71,7 @@ public enum ApiError: Error, Equatable {
 
 /// Representa un error proveniente del servidor con un código y un mensaje.
 /// Útil para mapear errores de dominio específicos.
-public struct ErrorType: Codable, Equatable {
+public struct ErrorType: Codable, Equatable, Sendable {
     /// Código numérico del error.
     var code: Int
     /// Descripción del error devuelta por el servidor.

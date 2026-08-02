@@ -61,10 +61,11 @@ public protocol ApiService {
     ///   - responseType: Tipo esperado de la respuesta (conforma a `Codable`).
     /// - Returns: Instancia decodificada del tipo indicado o `nil` si un interceptor de error recupera la ejecución.
     /// - Throws: `ApiError` o errores lanzados por interceptores.
-    func fetch<T: Codable>(endpoint: Endpoint, body: BodyParameters?, responseType: T.Type) async throws -> T?
+    func fetch<T: Codable & Sendable>(endpoint: Endpoint, body: BodyParameters?, responseType: T.Type) async throws -> T?
 }
 
 /// Implementación por defecto de `ApiService` con soporte de interceptores.
+@MainActor
 public final class Api: ApiService {
     private static var baseUrl: String = ""
 
@@ -111,7 +112,7 @@ public final class Api: ApiService {
 
     /// Ejecuta la llamada de red aplicando interceptores de request/response/error.
     /// - Note: Si un `ErrorInterceptor` maneja el error sin lanzar, el método devuelve `nil`.
-    public func fetch<T: Codable>(endpoint: any Endpoint, body: (any BodyParameters)?, responseType: T.Type) async throws -> T? {
+    public func fetch<T: Codable & Sendable>(endpoint: any Endpoint, body: (any BodyParameters)?, responseType: T.Type) async throws -> T? {
         guard let url: URL = endpoint.url(base: Self.baseUrl) else {
             throw ApiError.badURL
         }
