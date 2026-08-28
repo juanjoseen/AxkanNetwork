@@ -89,6 +89,11 @@ public struct ErrorType: Codable, Equatable, Sendable {
     /// Descripción del error devuelta por el servidor.
     public var message: String
     
+    public init(code: Int, message: String) {
+        self.code = code
+        self.message = message
+    }
+    
     /// Error estándar para credenciales inválidas.
     public static let INVALID_CREDENTIALS: ErrorType = .init(code: 4501, message: "Credenciales inválidas")
     /// Error genérico/desconocido cuando no se puede determinar la causa exacta.
