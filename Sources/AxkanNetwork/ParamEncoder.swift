@@ -37,6 +37,9 @@ public final class JSONParamEncoder: ParamEncoder {
 }
 
 public final class MultipartEncoder: ParamEncoder {
+    
+    public init() {}
+    
     public func encode(_ body: BodyParameters, into request: inout URLRequest) throws {
         let boundary = "Boundary-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
