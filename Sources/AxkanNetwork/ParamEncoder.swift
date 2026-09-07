@@ -35,3 +35,22 @@ public final class JSONParamEncoder: ParamEncoder {
         request.httpBody = data
     }
 }
+
+public final class MultipartEncoder: ParamEncoder {
+    public func encode(_ body: BodyParameters, into request: inout URLRequest) throws {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        var bodyData: Data = Data()
+        let lineBreak = "\r\n"
+        guard let fileData = body.toData() else {
+            throw ApiError.decodingError
+        }
+        bodyData.append("--\(boundary)\(lineBreak)".data(using: .utf8)!)
+        bodyData.append("Content-Disposition: form-data; name=\"file\"; filename=\"file.png\"\(lineBreak)".data(using: .utf8)!)
+        bodyData.append("Content-Type: image/png\(lineBreak)\(lineBreak)".data(using: .utf8)!)
+        bodyData.append(fileData)
+        bodyData.append("\(lineBreak)".data(using: .utf8)!)
+        bodyData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = bodyData
+    }
+}
